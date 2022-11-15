@@ -3,7 +3,7 @@ package gateway
 import (
 	"net/http"
 
-	"github.com/cortexproject/cortex/pkg/util"
+	util_log "github.com/cortexproject/cortex/pkg/util/log"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/weaveworks/common/server"
@@ -44,9 +44,8 @@ func (g *Gateway) Start() {
 
 // RegisterRoutes binds all to be piped routes to their handlers
 func (g *Gateway) registerRoutes() {
-	g.server.HTTP.Path("/all_user_stats").HandlerFunc(g.distributorProxy.Handler)
-	g.server.HTTP.Path("/api/prom/push").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.distributorProxy.Handler)))
-	g.server.HTTP.PathPrefix("/api").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.queryFrontendProxy.Handler)))
+	g.server.HTTP.Path("/api/v1/push").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.distributorProxy.Handler)))
+	g.server.HTTP.PathPrefix("/prometheus").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.queryFrontendProxy.Handler)))
 	g.server.HTTP.Path("/health").HandlerFunc(g.healthCheck)
 	g.server.HTTP.PathPrefix("/").HandlerFunc(g.notFoundHandler)
 }
@@ -57,7 +56,7 @@ func (g *Gateway) healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Gateway) notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	logger := log.With(util.WithContext(r.Context(), util.Logger), "ip_address", r.RemoteAddr)
+	logger := log.With(util_log.WithContext(r.Context(), util_log.Logger), "ip_address", r.RemoteAddr)
 	level.Info(logger).Log("msg", "no request handler defined for this route", "route", r.RequestURI)
 	w.WriteHeader(404)
 	w.Write([]byte("404 - Resource not found"))

@@ -1,17 +1,17 @@
-package gateway
+package org
 
 import (
 	"fmt"
 )
 
-type tenant struct {
+type Tenant struct {
 	TenantID string `json:"tenant_id"`
-	Audience string `json:"aud"`
+	Audience string `json:"aud,omitempty"`
 	Version  uint8  `json:"version"`
 }
 
 // Valid returns an error if JWT payload is incomplete
-func (t *tenant) Valid() error {
+func (t *Tenant) Valid() error {
 	if t.TenantID == "" {
 		return fmt.Errorf("tenant is empty")
 	}

@@ -7,6 +7,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/rewe-digital/cortex-gateway/pkg/util"
 )
 
 // Proxy pipes the traffic between the requester (Prometheus / Grafana) and upstream service
@@ -57,7 +59,7 @@ func newDirector(targetURL *url.URL) func(req *http.Request) {
 		req.URL.Scheme = targetURL.Scheme
 		req.URL.Host = targetURL.Host
 		req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
-		req.URL.Path = singleJoiningSlash(targetURL.Path, req.URL.Path)
+		req.URL.Path = util.SingleJoiningSlash(targetURL.Path, req.URL.Path)
 		req.Host = targetURL.Host
 		if targetQuery == "" || req.URL.RawQuery == "" {
 			req.URL.RawQuery = targetQuery + req.URL.RawQuery

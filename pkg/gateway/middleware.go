@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/cortexproject/cortex/pkg/util"
-	jwt "github.com/dgrijalva/jwt-go"
-	jwtReq "github.com/dgrijalva/jwt-go/request"
+	util_log "github.com/cortexproject/cortex/pkg/util/log"
+	jwt "github.com/golang-jwt/jwt/v4"
+	jwtReq "github.com/golang-jwt/jwt/v4/request"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/weaveworks/common/middleware"
+
+	"github.com/rewe-digital/cortex-gateway/pkg/org"
 )
 
 var (
@@ -36,7 +38,7 @@ func init() {
 // AuthenticateTenant validates the Bearer Token and attaches the TenantID to the request
 var AuthenticateTenant = middleware.Func(func(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.With(util.WithContext(r.Context(), util.Logger), "ip_address", r.RemoteAddr)
+		logger := log.With(util_log.WithContext(r.Context(), util_log.Logger), "ip_address", r.RemoteAddr)
 		level.Debug(logger).Log("msg", "authenticating request", "route", r.RequestURI)
 
 		tokenString := r.Header.Get("Authorization") // Get operation is case insensitive
@@ -48,7 +50,7 @@ var AuthenticateTenant = middleware.Func(func(next http.Handler) http.Handler {
 		}
 
 		// Try to parse and validate JWT
-		te := &tenant{}
+		te := &org.Tenant{}
 		_, err := jwtReq.ParseFromRequest(
 			r,
 			jwtReq.AuthorizationHeaderExtractor,
