@@ -1,7 +1,3 @@
-# Archive notice
-
-> **This project is not used internally at REWE-digital anymore and will no longer be maintained.**
-
 # Cortex Gateway
 
 ![License](https://img.shields.io/github/license/rewe-digital/cortex-gateway.svg?color=blue)
@@ -36,10 +32,31 @@ We try to solve this problem by adding a Gateway which can be considered the ent
 
 ### Expected JWT payload
 
-The expected Bearer token payload can be found here: https://github.com/rewe-digital/cortex-gateway/blob/b74de65d10a93e1ec0d223e92c08d16d59bbf3c4/gateway/tenant.go#L7-L11
+The expected Bearer token payload can be found here: [pkg/org/tenant.go#L7](https://github.com/telemetrytower/cortex-gateway/blob/master/pkg/org/tenant.go#L7)
 
 - "tenant_id"
 - "aud"
 - "version" (must be an integer)
 
 The audience and version claim is currently unused, but might be used in the future (e. g. to invalidate tokens).
+
+### Cortex Geteway Tool
+
+You can use `cortex-gateway-tool` to generate Bearer token.
+
+The comamnd options:
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `-auth.jwt-secret` | Secret to sign JSON Web Token | (empty string) |
+| `-tenant.id` | The tenant of JSON Web Token | (empty string) |
+| `-tenant.aud` | The audience of JSON Web Token | (empty string) |
+| `-tenant.version` | The version of JSON Web Token | (0) |
+
+An example:
+
+```bash
+$ docker run --entrypoint /go/bin/cortex-gateway-tool --name cortex-gateway songjiayang/cortex-gateway:v0.1.0 -auth.jwt-secret=94e5e3999029c81e54832c9545a13605 -tenant.id=demo
+
+eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZW1vIiwidmVyc2lvbiI6MX0.J59fhMZjbAkm1nCfGB2kR2r3BEJScHoRWBgQUWve-BMFPX6N5SGERZkbKDRk7zExMcq6Tuvqn_E-MI6-a-gy-w
+```

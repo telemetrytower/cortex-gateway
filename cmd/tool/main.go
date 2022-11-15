@@ -17,9 +17,9 @@ var (
 )
 
 func main() {
-	flag.StringVar(&tenantID, "tenant.id", "", "The tenant of JSON Web Token.")
-	flag.StringVar(&aud, "tenant.aud", "", "The audience of JSON Web Token.")
-	flag.UintVar(&version, "tenant.version", 1, "The version of JSON Web Token.")
+	flag.StringVar(&tenantID, "tenant.id", "", "The tenant of JSON Web Token")
+	flag.StringVar(&aud, "tenant.aud", "", "The audience of JSON Web Token")
+	flag.UintVar(&version, "tenant.version", 1, "The version of JSON Web Token")
 	flag.StringVar(&jwtSecret, "auth.jwt-secret", "", "Secret to sign JSON Web Token")
 	flag.Parse()
 
