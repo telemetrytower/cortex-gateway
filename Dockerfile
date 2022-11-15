@@ -15,5 +15,5 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/bin/cortex-gateway /go/bin/cortex-gateway
 COPY --from=builder /go/bin/cortex-gateway-tool /go/bin/cortex-gateway-tool
 
-ENV VERSION 0.2.0
+ENV VERSION 0.1.0
 ENTRYPOINT ["/go/bin/cortex-gateway"]

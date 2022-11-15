@@ -1,17 +1,16 @@
 global:
-  scrape_interval: 15s # By default, scrape targets every 15 seconds.
-  scrape_timeout: 15s
-  evaluation_interval: 15s
-  # external_labels:
-  #  - __replica__: $${MY_POD_NAME}
-# remote_write:
-#   - url: http://host.docker.internal/api/prom/push
-#     bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZXZlbG9wbWVudCIsInZlcnNpb24iOjEsImF1ZCI6InJld2UifQ.a7zdFoVYTk_CKR1Cj3h6S3SBGPseS0x3PNJjy4jdvPtWaraDC638QlXu0CeBMf3vLWPBJB0fopbSMQvm6IoPtw
-#     queue_config:
-#       max_shards: 20
-#       max_samples_per_send: 1000
-
+  scrape_interval: 15s
+  
 scrape_configs:
-  - job_name: 'prometheus'
-    static_configs: 
-        - targets: ["localhost:9090"]
+  - job_name: cortex
+    static_configs:
+      - targets: ['cortex']
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+remote_write:
+  - url: http://cortex-gateway/api/v1/push
+    authorization:
+      credentials: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZW1vIiwidmVyc2lvbiI6MX0.J59fhMZjbAkm1nCfGB2kR2r3BEJScHoRWBgQUWve-BMFPX6N5SGERZkbKDRk7zExMcq6Tuvqn_E-MI6-a-gy-w
+    send_exemplars: true

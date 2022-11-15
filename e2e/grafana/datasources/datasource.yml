@@ -1,13 +1,14 @@
 apiVersion: 1
 datasources:
-- name: Docker Host
+- name: Cortex
+  type: prometheus
   access: proxy
-  orgId: 0
-  isDefault: false
+  orgId: 1
+  url: http://cortex-gateway/prometheus
+  version: 1
+  editable: true
+  isDefault: true
   jsonData: 
     httpHeaderName1: "Authorization"
   secureJsonData: 
-    httpHeaderValue1: "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZXZlbG9wbWVudCIsInZlcnNpb24iOjEsImF1ZCI6InJld2UifQ.a7zdFoVYTk_CKR1Cj3h6S3SBGPseS0x3PNJjy4jdvPtWaraDC638QlXu0CeBMf3vLWPBJB0fopbSMQvm6IoPtw"
-  type: "prometheus"
-  url: "http://host.docker.internal"
-  version: 1
+    httpHeaderValue1: "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZW1vIiwidmVyc2lvbiI6MX0.J59fhMZjbAkm1nCfGB2kR2r3BEJScHoRWBgQUWve-BMFPX6N5SGERZkbKDRk7zExMcq6Tuvqn_E-MI6-a-gy-w"

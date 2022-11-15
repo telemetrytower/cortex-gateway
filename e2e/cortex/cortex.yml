@@ -1,0 +1,25 @@
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+
+blocks_storage:
+  tsdb:
+    dir: /data/cortex/tsdb
+  bucket_store:
+    sync_dir: /data/cortex/tsdb-sync
+
+  backend: filesystem
+  filesystem:
+    dir: /data/tsdb
+
+compactor:
+  data_dir: /data/cortex/compactor
+  sharding_ring:
+    kvstore:
+      store: inmemory
+      
+storage:
+  engine: blocks
