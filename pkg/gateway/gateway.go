@@ -11,51 +11,28 @@ import (
 
 // Gateway hosts a reverse proxy for each upstream cortex service we'd like to tunnel after successful authentication
 type Gateway struct {
-	cfg                Config
-	distributorProxy   *Proxy
-	queryFrontendProxy *Proxy
-	rulerProxy         *Proxy
-	alertmanagerProxy  *Proxy
-	server             *server.Server
+	cfg     Config
+	proxies map[string]*Proxy
+	server  *server.Server
 }
 
 // New instantiates a new Gateway
 func New(cfg Config, svr *server.Server) (*Gateway, error) {
-	// Initialize reverse proxy for each upstream target service
-	distributor, err := newProxy(cfg.DistributorAddress, "distributor")
-	if err != nil {
-		return nil, err
-	}
-	queryFrontend, err := newProxy(cfg.QueryFrontendAddress, "query-frontend")
-	if err != nil {
-		return nil, err
-	}
-
-	// Ruler Address maybe an empty string
-	var ruler *Proxy
-	if cfg.AlertmanagerAddress != "" {
-		ruler, err = newProxy(cfg.RulerAddress, "ruler")
+	// init proxies
+	proxies := map[string]*Proxy{}
+	for targetName, target := range cfg.Targets {
+		proxy, err := newProxy(target, targetName)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	// Alertmanager Address maybe an empty string
-	var alertmanager *Proxy
-	if cfg.AlertmanagerAddress != "" {
-		alertmanager, err = newProxy(cfg.AlertmanagerAddress, "alertmanager")
-		if err != nil {
-			return nil, err
-		}
+		proxies[targetName] = proxy
 	}
 
 	return &Gateway{
-		cfg:                cfg,
-		distributorProxy:   distributor,
-		queryFrontendProxy: queryFrontend,
-		rulerProxy:         ruler,
-		alertmanagerProxy:  alertmanager,
-		server:             svr,
+		cfg:     cfg,
+		proxies: proxies,
+		server:  svr,
 	}, nil
 }
 
@@ -66,18 +43,18 @@ func (g *Gateway) Start() {
 
 // RegisterRoutes binds all to be piped routes to their handlers
 func (g *Gateway) registerRoutes() {
-	g.server.HTTP.Path("/api/v1/push").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.distributorProxy.Handler)))
-	g.server.HTTP.PathPrefix("/prometheus").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.queryFrontendProxy.Handler)))
+	for _, route := range g.cfg.Routes {
+		proxy, ok := g.proxies[route.Target]
+		if !ok {
+			continue
+		}
 
-	if g.rulerProxy != nil {
-		g.server.HTTP.Path("/api/v1/alerts").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.rulerProxy.Handler)))
-		g.server.HTTP.PathPrefix("/api/v1/rules").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.rulerProxy.Handler)))
+		if route.Prefix {
+			g.server.HTTP.PathPrefix(route.Path).Handler(AuthenticateTenant.Wrap(http.HandlerFunc(proxy.Handler)))
+		} else {
+			g.server.HTTP.Path(route.Path).Handler(AuthenticateTenant.Wrap(http.HandlerFunc(proxy.Handler)))
+		}
 	}
-
-	if g.alertmanagerProxy != nil {
-		g.server.HTTP.PathPrefix("/alertmanager").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.alertmanagerProxy.Handler)))
-	}
-
 	g.server.HTTP.Path("/health").HandlerFunc(g.healthCheck)
 	g.server.HTTP.PathPrefix("/").HandlerFunc(g.notFoundHandler)
 }

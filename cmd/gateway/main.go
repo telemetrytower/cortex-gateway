@@ -36,13 +36,13 @@ func main() {
 		gatewayCfg gateway.Config
 	)
 
-	flagext.RegisterFlags(&serverCfg, &gatewayCfg)
+	flagext.RegisterFlags(&serverCfg)
 	flag.Parse()
 
 	util_log.InitLogger(&serverCfg)
 
 	// Must be done after initializing the logger, otherwise no log message is printed
-	err := gatewayCfg.Validate()
+	err := gatewayCfg.Load()
 	util_log.CheckFatal("validating gateway config", err)
 
 	// Setting the environment variable JAEGER_AGENT_HOST enables tracing

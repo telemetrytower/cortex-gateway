@@ -1,0 +1,13 @@
+basic:
+  xxxx:
+    password: 2
+    tenant: xxx
+secret: "xxxx"
+routes:
+  - method: put
+    prefix: true
+    path: xxx
+    targets: xxx2
+targets:
+  distributor: "xxx"
+  query-frontend: "xxx"
