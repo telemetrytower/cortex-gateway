@@ -43,6 +43,8 @@ func (g *Gateway) Start() {
 
 // RegisterRoutes binds all to be piped routes to their handlers
 func (g *Gateway) registerRoutes() {
+	authenticate := NewAuthenticate(g.cfg.JwtSecret, g.cfg.Basics)
+
 	for _, route := range g.cfg.Routes {
 		proxy, ok := g.proxies[route.Target]
 		if !ok {
@@ -50,11 +52,12 @@ func (g *Gateway) registerRoutes() {
 		}
 
 		if route.Prefix {
-			g.server.HTTP.PathPrefix(route.Path).Handler(AuthenticateTenant.Wrap(http.HandlerFunc(proxy.Handler)))
+			g.server.HTTP.PathPrefix(route.Path).Handler(authenticate.Wrap(http.HandlerFunc(proxy.Handler)))
 		} else {
-			g.server.HTTP.Path(route.Path).Handler(AuthenticateTenant.Wrap(http.HandlerFunc(proxy.Handler)))
+			g.server.HTTP.Path(route.Path).Handler(authenticate.Wrap(http.HandlerFunc(proxy.Handler)))
 		}
 	}
+
 	g.server.HTTP.Path("/health").HandlerFunc(g.healthCheck)
 	g.server.HTTP.PathPrefix("/").HandlerFunc(g.notFoundHandler)
 }

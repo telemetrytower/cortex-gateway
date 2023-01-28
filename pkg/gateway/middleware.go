@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 
@@ -19,7 +18,6 @@ import (
 )
 
 var (
-	jwtSecret    string
 	authFailures = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "cortex_gateway",
 		Name:      "failed_authentications_total",
@@ -32,57 +30,71 @@ var (
 	}, []string{"tenant"})
 )
 
-func init() {
-	flag.StringVar(&jwtSecret, "gateway.auth.jwt-secret", "", "Secret to sign JSON Web Tokens")
+func NewAuthenticate(jwtSecret string, basics map[string]BasicAuth) middleware.Func {
+	enableBasicAuth := len(basics) > 0
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := log.With(util_log.WithContext(r.Context(), util_log.Logger), "ip_address", r.RemoteAddr)
+			level.Debug(logger).Log("msg", "authenticating request", "route", r.RequestURI)
+
+			tokenString := r.Header.Get("Authorization") // Get operation is case insensitive
+			if tokenString == "" {
+				level.Info(logger).Log("msg", "no Authorization token provided")
+				http.Error(w, "No Authorization token provided", http.StatusUnauthorized)
+				authFailures.WithLabelValues("no_token").Inc()
+				return
+			}
+
+			var (
+				tenantID string
+				err      error
+			)
+
+			if enableBasicAuth {
+				tenantID, err = basicAuth(w, r, logger, basics)
+			}
+			if err != nil {
+				return
+			}
+
+			// Try Jwt auth
+			if tenantID == "" {
+				tenantID, err = jwtAuth(w, r, logger, jwtSecret)
+			}
+			if err != nil {
+				return
+			}
+
+			if tenantID == "" {
+				level.Error(logger).Log("msg", "empty tenant resolve from Authorization")
+				http.Error(w, "Invalid Authorization token provided", http.StatusUnauthorized)
+				return
+			}
+
+			// Token is valid
+			authSuccess.WithLabelValues(tenantID).Inc()
+			r.Header.Set("X-Scope-OrgID", tenantID)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
-// AuthenticateTenant validates the Bearer Token and attaches the TenantID to the request
-var AuthenticateTenant = middleware.Func(func(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.With(util_log.WithContext(r.Context(), util_log.Logger), "ip_address", r.RemoteAddr)
-		level.Debug(logger).Log("msg", "authenticating request", "route", r.RequestURI)
-
-		// Try Basic auth first
-		te, err := tryBasicAuth(w, r, logger)
-		if err != nil {
-			return
-		}
-
-		// Try Jwt auth
-		if te == nil {
-			te, err = tryJwtAuth(w, r, logger)
-		}
-		if err != nil {
-			return
-		}
-
-		// Token is valid
-		authSuccess.WithLabelValues(te.TenantID).Inc()
-		r.Header.Set("X-Scope-OrgID", te.TenantID)
-		next.ServeHTTP(w, r)
-	})
-})
-
-func tryBasicAuth(w http.ResponseWriter, r *http.Request, logger log.Logger) (*org.Tenant, error) {
+func basicAuth(w http.ResponseWriter, r *http.Request, logger log.Logger, basics map[string]BasicAuth) (string, error) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
-		return nil, nil
+		return "", nil
 	}
 
-	fmt.Println(username)
-	fmt.Println(password)
-	return nil, nil
+	expectAuth, exist := basics[username]
+	if exist && expectAuth.Password == password {
+		return expectAuth.Tenant, nil
+	}
+
+	return "", errors.New("invalid Basic Authorization")
 }
 
-func tryJwtAuth(w http.ResponseWriter, r *http.Request, logger log.Logger) (*org.Tenant, error) {
-	tokenString := r.Header.Get("Authorization") // Get operation is case insensitive
-	if tokenString == "" {
-		level.Info(logger).Log("msg", "no bearer token provided")
-		http.Error(w, "No bearer token provided", http.StatusUnauthorized)
-		authFailures.WithLabelValues("no_token").Inc()
-		return nil, errors.New("No bearer token provided")
-	}
-
+func jwtAuth(w http.ResponseWriter, r *http.Request, logger log.Logger, jwtSecret string) (string, error) {
 	// Try to parse and validate JWT
 	te := &org.Tenant{}
 	_, err := jwtReq.ParseFromRequest(
@@ -107,5 +119,5 @@ func tryJwtAuth(w http.ResponseWriter, r *http.Request, logger log.Logger) (*org
 		authFailures.WithLabelValues("token_not_valid").Inc()
 	}
 
-	return te, err
+	return te.TenantID, err
 }
