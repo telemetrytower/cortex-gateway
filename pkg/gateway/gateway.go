@@ -14,6 +14,8 @@ type Gateway struct {
 	cfg                Config
 	distributorProxy   *Proxy
 	queryFrontendProxy *Proxy
+	rulerProxy         *Proxy
+	alertmanagerProxy  *Proxy
 	server             *server.Server
 }
 
@@ -29,10 +31,30 @@ func New(cfg Config, svr *server.Server) (*Gateway, error) {
 		return nil, err
 	}
 
+	// Ruler Address maybe an empty string
+	var ruler *Proxy
+	if cfg.AlertmanagerAddress != "" {
+		ruler, err = newProxy(cfg.RulerAddress, "ruler")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Alertmanager Address maybe an empty string
+	var alertmanager *Proxy
+	if cfg.AlertmanagerAddress != "" {
+		alertmanager, err = newProxy(cfg.AlertmanagerAddress, "alertmanager")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Gateway{
 		cfg:                cfg,
 		distributorProxy:   distributor,
 		queryFrontendProxy: queryFrontend,
+		rulerProxy:         ruler,
+		alertmanagerProxy:  alertmanager,
 		server:             svr,
 	}, nil
 }
@@ -46,6 +68,16 @@ func (g *Gateway) Start() {
 func (g *Gateway) registerRoutes() {
 	g.server.HTTP.Path("/api/v1/push").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.distributorProxy.Handler)))
 	g.server.HTTP.PathPrefix("/prometheus").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.queryFrontendProxy.Handler)))
+
+	if g.rulerProxy != nil {
+		g.server.HTTP.Path("/api/v1/alerts").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.rulerProxy.Handler)))
+		g.server.HTTP.PathPrefix("/api/v1/rules").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.rulerProxy.Handler)))
+	}
+
+	if g.alertmanagerProxy != nil {
+		g.server.HTTP.PathPrefix("/alertmanager").Handler(AuthenticateTenant.Wrap(http.HandlerFunc(g.alertmanagerProxy.Handler)))
+	}
+
 	g.server.HTTP.Path("/health").HandlerFunc(g.healthCheck)
 	g.server.HTTP.PathPrefix("/").HandlerFunc(g.notFoundHandler)
 }
