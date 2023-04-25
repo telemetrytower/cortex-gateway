@@ -1,0 +1,14 @@
+apiVersion: 1
+datasources:
+- name: Cortex
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://cortex-gateway/prometheus
+  version: 1
+  editable: true
+  isDefault: true
+  jsonData: 
+    httpHeaderName1: "Authorization"
+  secureJsonData: 
+    httpHeaderValue1: "Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZW1vIiwidmVyc2lvbiI6MX0.UnM-5mDK24xDkNPes4VMLzC1xBQ9tx3GKoEjrbdd4beY510t9Oj1w2IIfNO10Fe9QEowFchceJ95X-j30mO1Iw"

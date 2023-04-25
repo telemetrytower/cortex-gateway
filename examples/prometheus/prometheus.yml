@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  
+scrape_configs:
+  - job_name: cortex
+    static_configs:
+      - targets: ['cortex']
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+
+remote_write:
+  - url: http://cortex-gateway/api/v1/push
+    authorization:
+      credentials: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJkZW1vIiwidmVyc2lvbiI6MX0.UnM-5mDK24xDkNPes4VMLzC1xBQ9tx3GKoEjrbdd4beY510t9Oj1w2IIfNO10Fe9QEowFchceJ95X-j30mO1Iw
+    send_exemplars: true

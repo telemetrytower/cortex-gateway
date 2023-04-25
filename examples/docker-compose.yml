@@ -1,0 +1,48 @@
+version: '3.4'
+services:
+  prometheus:
+    image: prom/prometheus:v2.39.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - data-prometheus:/prometheus
+    ports:
+      - 9090:9090
+
+  cortex:
+    image: cortexproject/cortex:v1.13.1
+    command: ["-config.file=/cortex/config/cortex.yml", "-log.level=debug"]
+    volumes:
+      - ./cortex/:/cortex/config
+      - data-cortex:/data
+    ports:
+      - 8080:80
+  
+  cortex-gateway:
+    image: songjiayang/cortex-gateway:v0.1.0
+    command: 
+      - "-config.file=/etc/cortex-gateway.yaml"
+      - "-log.level=debug"
+    volumes:
+      - ./cortex-gateway/cortex-gateway.yaml/:/etc/cortex-gateway.yaml
+
+  grafana:
+    image: grafana/grafana:9.1.2
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_USERS_DEFAULT_THEME=light
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=critical
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - 3000:3000
+
+volumes:
+  data-prometheus:
+  data-cortex:

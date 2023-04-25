@@ -1,0 +1,24 @@
+secret: "test"  
+basic:  
+  user1:      
+    password: "password"       
+    tenant: "demo"                          
+routes:              
+  - path: "/api/v1/push"       
+    target: "distributor"
+  - path: "/prometheus"
+    prefix: true
+    target: "query-frontend"
+  - path: "/api/v1/alerts"
+    target: "ruler"
+  - path: "/api/v1/rules"
+    prefix: true
+    target: "ruler"
+  - path: "/alertmanager"
+    prefix: true
+    target: "alertmanager"    
+targets:                
+  distributor: "http://cortex"            
+  query-frontend: "http://cortex"
+  alertmanager: "http://cortex"
+  ruler: "http://cortex"
