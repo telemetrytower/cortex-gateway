@@ -14,7 +14,7 @@ services:
       - 9090:9090
 
   cortex:
-    image: cortexproject/cortex:v1.13.1
+    image: cortexproject/cortex:v1.15.0
     command: ["-config.file=/cortex/config/cortex.yml", "-log.level=debug"]
     volumes:
       - ./cortex/:/cortex/config
@@ -39,7 +39,9 @@ services:
       - GF_LOG_MODE=console
       - GF_LOG_LEVEL=critical
     volumes:
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning-dashboards.yaml:/etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml:ro
+      - ./grafana/provisioning-datasources.yaml:/etc/grafana/provisioning/datasources/provisioning-datasources.yaml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     ports:
       - 3000:3000
 
